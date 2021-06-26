@@ -2,19 +2,27 @@ package com.example.bai1c5;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.app.DatePickerDialog;
+import android.content.ContentValues;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Spinner;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.model.Author;
 import com.example.model.Book;
 
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Random;
 
 
@@ -22,10 +30,13 @@ public class QuanLySach extends AppCompatActivity {
     ListView lvBookData;
     ArrayAdapter<Book> adapter;
     Spinner spinner;
-    EditText edtBookName,edtDateOfPublication;
+    EditText edtBookName;
+    TextView txtDate;
     Button btnDate,btnThemSach;
     ArrayAdapter<Author> authorList;
     Author selectedAuthor = XemDanhSachTacGia.list.get(0);
+    Calendar calendarDate = Calendar.getInstance();
+    SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -39,12 +50,9 @@ public class QuanLySach extends AppCompatActivity {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 selectedAuthor = authorList.getItem(position);
-                for(int i=0;i<adapter.getCount();i++)
-                {
-                    selectedAuthor.getBooks().add(adapter.getItem(i));
-                }
                 adapter.clear();
-                adapter.addAll(selectedAuthor.getBooks());
+                hienthiDanhsach();
+                
             }
 
             @Override
@@ -58,19 +66,56 @@ public class QuanLySach extends AppCompatActivity {
                  Random random = new Random();
                  int bookID = random.nextInt(999);
                  String bookName =  edtBookName.getText().toString();
-                 String Date = edtDateOfPublication.getText().toString();
+                 String Date = txtDate.getText().toString();
                  int authorID = selectedAuthor.getAuthorID();
                  Book book = new Book(bookID,bookName,Date,authorID);
-                 for(int i=0;i<adapter.getCount();i++)
-                 {
-                     selectedAuthor.getBooks().add(adapter.getItem(i));
+
+                 ContentValues values = new ContentValues();
+                 values.put("bookID",bookID);
+                 values.put("bookName",bookName);
+                 values.put("DateOfPublication",Date);
+                 values.put("authorID",authorID);
+                 long result = MainActivity.database.insert("BookData",null,values);
+                 if(result>0) {
+                     Toast.makeText(QuanLySach.this, "Them thanh cong", Toast.LENGTH_LONG).show();
                  }
+                 else {
+                     Toast.makeText(QuanLySach.this, "Them that bai", Toast.LENGTH_LONG).show();
+                 }
+
                  selectedAuthor.getBooks().add(book);
                  adapter.clear();
-                 adapter.addAll(selectedAuthor.getBooks());
-
+                 hienthiDanhsach();
+                 edtBookName.setText("");
+                 txtDate.setText("");
+                 edtBookName.requestFocus();
              }
          });
+         btnDate.setOnClickListener(new View.OnClickListener() {
+             @Override
+             public void onClick(View v) {
+                 XuLyNhapDate();
+             }
+         });
+    }
+
+    private void XuLyNhapDate() {
+        DatePickerDialog.OnDateSetListener callBack = new DatePickerDialog.OnDateSetListener() {
+            @Override
+            public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
+                calendarDate.set(Calendar.YEAR,year);
+                calendarDate.set(Calendar.MONTH,month);
+                calendarDate.set(Calendar.DAY_OF_MONTH,dayOfMonth);
+                txtDate.setText(simpleDateFormat.format(calendarDate.getTime()));
+            }
+        };
+
+        DatePickerDialog dialog = new DatePickerDialog(QuanLySach.this,
+                callBack,
+                calendarDate.get(Calendar.YEAR),
+                calendarDate.get(Calendar.MONTH),
+                calendarDate.get(Calendar.DAY_OF_MONTH));
+        dialog.show();
     }
 
     private void addControls() {
@@ -86,7 +131,7 @@ public class QuanLySach extends AppCompatActivity {
 
 
         edtBookName = findViewById(R.id.edtBookName);
-        edtDateOfPublication = findViewById(R.id.edtDateOfPublication);
+        txtDate = findViewById(R.id.txtDate);
         btnDate = findViewById(R.id.btnDate);
         btnThemSach = findViewById(R.id.btnThemSach);
     }
